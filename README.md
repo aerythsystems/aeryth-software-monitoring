@@ -45,7 +45,7 @@ Tanpa Upstash, data disimpan di memori fungsi Vercel dan bisa hilang kapan saja 
 Level: INFO (login, pulih, terhubung), WARN (login gagal, lambat >3 dtk, HTTP 4xx, token heartbeat salah), ERROR (timeout, HTTP 5xx), FATAL (down 3x berturut-turut, error server). Maksimal 500 log terakhir. Pemeriksaan web hanya berjalan saat dashboard terbuka.
 
 ## Bot Telegram + pemeriksaan otomatis
-Perintah bot (hanya untuk chat ID pemilik): `/status`, `/check <nama>`, `/logs [level]`, `/web`, `/help`.
+Bot memakai tombol interaktif (menu, status, detail produk, filter log) dan 2 bahasa (Indonesia/English, ganti lewat `/lang`). Perintah: `/menu`, `/status`, `/check <nama>`, `/logs [level]`, `/lang`, `/help`. Hanya chat ID pemilik yang dilayani.
 Alert otomatis: produk DOWN 3x berturut-turut, heartbeat berhenti, dan saat pulih.
 
 1. Telegram → @BotFather → `/newbot` → simpan token (`TELEGRAM_BOT_TOKEN`).
@@ -53,7 +53,7 @@ Alert otomatis: produk DOWN 3x berturut-turut, heartbeat berhenti, dan saat puli
 3. Buat `TELEGRAM_WEBHOOK_SECRET` dan `CRON_SECRET` (huruf/angka/_/-): `node -e "console.log(require('crypto').randomBytes(24).toString('base64url'))"`.
 4. Isi semua variabel di Vercel, lalu deploy.
 5. Daftarkan webhook: `curl "https://api.telegram.org/bot<TOKEN>/setWebhook?url=https://DOMAIN/api/telegram&secret_token=<TELEGRAM_WEBHOOK_SECRET>"`
-6. (Opsional) BotFather → `/setcommands`: `status - Status semua produk`, `check - Cek satu produk`, `logs - Log terakhir`, `web - Link dashboard`, `help - Bantuan`.
+6. (Opsional) BotFather → `/setcommands`: `menu - Menu utama`, `status - Status semua produk`, `check - Cek satu produk`, `logs - Log terbaru`, `lang - Bahasa / Language`, `help - Bantuan`.
 7. cron-job.org (gratis): URL `https://DOMAIN/api/cron`, interval 5 menit, header `Authorization: Bearer <CRON_SECRET>`.
 
 Bot butuh URL publik, jadi uji di Vercel (bukan localhost). Perhatikan kuota Upstash free tier; interval 5 menit aman.

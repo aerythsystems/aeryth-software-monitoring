@@ -1,6 +1,6 @@
 import { HB_TTL } from "./_lib.js";
 import { get, set, incr, log } from "./_store.js";
-import { notify, esc } from "./_telegram.js";
+import { alertEvent } from "./_telegram.js";
 
 // Periksa satu website, catat log, dan kirim alert Telegram saat DOWN 3x / pulih.
 export async function checkWeb(p) {
@@ -18,7 +18,7 @@ export async function checkWeb(p) {
     if (prev > 0) {
       await set(key, 0);
       await log("INFO", p.id, `${p.name} pulih (HTTP ${out.code}, ${out.ms} ms)`);
-      if (prev >= 3) await notify(`🟢 <b>${esc(p.name)}</b> pulih (HTTP ${out.code}, ${out.ms} ms)`);
+      if (prev >= 3) await alertEvent("up", p, { code: out.code, ms: out.ms });
     }
     if (out.ms > 3000) await log("WARN", p.id, `${p.name} lambat: ${out.ms} ms`);
   } else {
@@ -26,7 +26,7 @@ export async function checkWeb(p) {
     const why = out.error || `HTTP ${out.code}`;
     const level = n === 3 ? "FATAL" : out.code && out.code < 500 ? "WARN" : "ERROR";
     await log(level, p.id, n === 3 ? `${p.name} DOWN 3x berturut-turut (${why})` : `${p.name} gagal: ${why}`);
-    if (n === 3) await notify(`🔴 <b>${esc(p.name)}</b> DOWN 3x berturut-turut (${esc(why)})`);
+    if (n === 3) await alertEvent("down", p, { why });
   }
   return out;
 }
@@ -46,10 +46,10 @@ export async function checkHeartbeat(p) {
     await set("hbs:" + p.id, h.state);
     if (h.state === "offline") {
       await log("FATAL", p.id, `${p.name} tidak mengirim heartbeat > ${HB_TTL / 1000} dtk`);
-      await notify(`🔴 <b>${esc(p.name)}</b> berhenti mengirim heartbeat (> ${HB_TTL / 1000} dtk)`);
+      await alertEvent("hbLost", p, { secs: HB_TTL / 1000 });
     } else if (prev === "offline") {
       await log("INFO", p.id, `${p.name} heartbeat kembali`);
-      await notify(`🟢 <b>${esc(p.name)}</b> heartbeat kembali`);
+      await alertEvent("hbBack", p);
     }
   }
   return h;
