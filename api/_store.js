@@ -1,9 +1,12 @@
 // Penyimpanan: Upstash Redis (REST, free tier) bila dikonfigurasi, jika tidak memori proses (sementara).
 const mem = new Map();
-export const persistent = () => !!(process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN);
+// Mendukung nama variabel dari Upstash langsung (UPSTASH_REDIS_REST_*) maupun integrasi Vercel (KV_REST_API_*)
+const redisUrl = () => process.env.UPSTASH_REDIS_REST_URL || process.env.KV_REST_API_URL;
+const redisToken = () => process.env.UPSTASH_REDIS_REST_TOKEN || process.env.KV_REST_API_TOKEN;
+export const persistent = () => !!(redisUrl() && redisToken());
 async function cmd(args) {
-  const r = await fetch(process.env.UPSTASH_REDIS_REST_URL, {
-    method: "POST", headers: { authorization: "Bearer " + process.env.UPSTASH_REDIS_REST_TOKEN }, body: JSON.stringify(args),
+  const r = await fetch(redisUrl(), {
+    method: "POST", headers: { authorization: "Bearer " + redisToken() }, body: JSON.stringify(args),
   });
   const j = await r.json();
   if (!r.ok || j.error) throw new Error(j.error || "store error");

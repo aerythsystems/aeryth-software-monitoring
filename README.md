@@ -17,7 +17,7 @@ Buka http://localhost:5173. Cek build: `npm run build`.
 | `ADMIN_PASSWORD` | password administrator |
 | `SESSION_SECRET` | string acak ≥ 32 karakter (`openssl rand -base64 48`) |
 | `HEARTBEAT_TOKEN` | token ≥ 16 karakter untuk aplikasi non-web |
-| `UPSTASH_REDIS_REST_URL` / `UPSTASH_REDIS_REST_TOKEN` | opsional; dari upstash.com (Redis, free tier) agar heartbeat & log permanen |
+| `UPSTASH_REDIS_REST_URL` / `UPSTASH_REDIS_REST_TOKEN` (atau `KV_REST_API_URL` / `KV_REST_API_TOKEN` dari integrasi Upstash di Vercel) | opsional; dari upstash.com (Redis, free tier) agar heartbeat & log permanen |
 
 ## Deploy ke Vercel (tanpa CLI)
 1. Push folder ke repo GitHub (`.env` sudah di-ignore).
