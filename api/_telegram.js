@@ -19,7 +19,9 @@ export async function tg(method, body) {
     const r = await fetch(`https://api.telegram.org/bot${process.env.TELEGRAM_BOT_TOKEN}/${method}`, {
       method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body), signal: AbortSignal.timeout(6000),
     });
-    return await r.json();
+    const j = await r.json();
+    if (!j.ok) console.error("telegram error:", method, j.description);
+    return j;
   } catch (e) { console.error("telegram gagal:", e.message); return null; }
 }
 export function notify(text, kb) {
