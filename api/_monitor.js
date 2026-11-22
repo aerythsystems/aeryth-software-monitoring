@@ -1,5 +1,5 @@
 import { HB_TTL } from "./_lib.js";
-import { get, set, incr, push, log } from "./_store.js";
+import { get, set, incr, push, log, mget } from "./_store.js";
 import { alertEvent } from "./_telegram.js";
 
 const incident = (p, start) => start && push("incidents", JSON.stringify({ id: p.id, name: p.name, short: p.short, start, end: Date.now() }), 50);
@@ -64,4 +64,26 @@ export async function checkHeartbeat(p) {
     }
   }
   return h;
+}
+
+export const nodeState = (r) => (r.off || Date.now() - r.at > HB_TTL ? "offline" : "online");
+export async function loadNodes() {
+  const ids = JSON.parse((await get("nodes")) || "[]");
+  if (!ids.length) return [];
+  return (await mget(ids.map((i) => "node:" + i))).filter(Boolean).map((x) => { const r = JSON.parse(x); return { ...r, state: nodeState(r), ageMs: Date.now() - r.at }; });
+}
+// Dipanggil cron: tandai perangkat yang berhenti melapor.
+export async function checkNodes() {
+  const out = [];
+  for (const r of await loadNodes()) {
+    if (r.state === "offline" && !r.off) {
+      const { state, ageMs, ...rec } = r;
+      rec.off = true; rec.offAt = r.at + HB_TTL;
+      await set("node:" + r.id, JSON.stringify(rec));
+      await log("FATAL", "node:" + r.id, `${r.name} berhenti melapor > ${HB_TTL / 1000} dtk`);
+      await alertEvent("nodeLost", { id: r.id, name: r.name }, { secs: HB_TTL / 1000, since: rec.offAt });
+    }
+    out.push({ id: r.id, state: r.state });
+  }
+  return out;
 }

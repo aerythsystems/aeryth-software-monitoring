@@ -4,7 +4,8 @@ type HB = { state: "online" | "offline" | "not_connected"; at: number | null; ag
 type Product = { id: string; name: string; kind: "web" | "desktop"; url?: string; hb?: HB };
 type Check = { status: "online" | "offline"; code: number | null; ms: number; at: number; error?: string };
 type Hist = Record<string, Check[]>;
-type Stat = { n: number; ok: number; ms: number; since: number; h?: number[] };
+type Stat = { n: number; ok: number; ms: number; since: number; h?: number[]; d?: Record<string, { n: number; ok: number }> };
+type NodeRec = { id: string; name: string; os?: string; host?: string; cpu: number; ram: number; disk: number; load: number; up: number; rtt: number; h: number[]; state: "online" | "offline"; ageMs: number; ver?: string };
 type Stats = Record<string, Stat>;
 type Status = "online" | "offline" | "unknown" | "not_connected";
 const LEVELS = ["INFO", "WARN", "ERROR", "FATAL"] as const;
@@ -95,6 +96,7 @@ export default function App() {
   const [auto, setAuto] = useState(true);
   const [loading, setLoading] = useState(false);
   const [updated, setUpdated] = useState<number | null>(null);
+  const [nodes, setNodes] = useState<NodeRec[]>([]);
 
   const unauth = (e: unknown) => { if ((e as Error).message === "Unauthorized") setUser(null); };
   useEffect(() => { api<{ user: string }>("/api/session").then((r) => setUser(r.user)).catch(() => setUser(null)); }, []);
@@ -126,6 +128,16 @@ export default function App() {
     setLoading(false);
   }, [loadProducts, checkOne, loadLogs]);
 
+  const loadNodes = useCallback(async () => {
+    try { setNodes((await api<{ nodes: NodeRec[] }>("/api/nodes")).nodes); } catch (e) { unauth(e); }
+  }, []);
+  useEffect(() => {
+    if (!user) return;
+    loadNodes();
+    if (route !== "/devices") return;
+    const t = setInterval(loadNodes, 15_000); // "real-time": polling 15 detik saat halaman Devices terbuka
+    return () => clearInterval(t);
+  }, [user, route, loadNodes]);
   useEffect(() => {
     if (!user) return;
     if (!auto) { loadProducts(); loadLogs(); return; }
@@ -151,6 +163,9 @@ export default function App() {
   const webStats = Object.values(stats).filter((s) => s && typeof s === "object" && "n" in s);
   const tn = webStats.reduce((a, s) => a + s.n, 0);
   const totalUptime = tn ? `${((webStats.reduce((a, s) => a + s.ok, 0) / tn) * 100).toFixed(2)}%` : "—";
+  const nodesDown = nodes.filter((n) => n.state === "offline").length;
+  const lvl = (v: number) => (v >= 90 ? "bad" : v >= 70 ? "warn" : "ok");
+  const fmtUp = (sec: number) => (sec >= 86400 ? `${Math.floor(sec / 86400)}h ${Math.floor((sec % 86400) / 3600)}j` : sec >= 3600 ? `${Math.floor(sec / 3600)}j ${Math.floor((sec % 3600) / 60)}m` : `${Math.floor(sec / 60)}m`);
   const errCount = logs.filter((l) => (l.level === "ERROR" || l.level === "FATAL") && Date.now() - l.t < 86_400_000).length;
   const banner = !known
     ? { k: "unknown", t: "Menunggu hasil pemeriksaan", s: "Pemeriksaan pertama sedang berjalan." }
@@ -199,6 +214,30 @@ export default function App() {
   let page;
   if (route === "/monitoring") {
     page = <><div className="ph"><div><h1>Monitoring</h1><p>Status, respons, dan uptime setiap produk.</p></div>{run}</div><div className="card">{table(true)}</div></>;
+  } else if (route === "/devices") {
+    const on = nodes.filter((n) => n.state === "online").length;
+    page = (
+      <>
+        <div className="ph"><div><h1>Devices</h1><p>Telemetri langsung dari agent · diperbarui tiap 15 detik · {on}/{nodes.length} online</p></div><button className="btn" onClick={loadNodes}>Muat ulang</button></div>
+        {nodes.length ? (
+          <div className="nodes">{nodes.map((n) => (
+            <div className="card node" key={n.id}>
+              <div className="nh"><div><b>{n.name || n.id}</b><small>{[n.os, n.host].filter(Boolean).join(" · ")}</small></div><Pill s={n.state} /></div>
+              {n.state === "online" ? <>
+                {(["cpu", "ram", "disk"] as const).map((k) => (
+                  <div className="g" key={k}><span>{k.toUpperCase()}</span><div className="track"><i className={lvl(n[k])} style={{ width: `${Math.min(100, n[k])}%` }} /></div><b className="num">{Math.round(n[k])}%</b></div>
+                ))}
+                <div className="nf"><span>Aktif {fmtUp(n.up)}</span><span>Load {n.load}</span><span>RTT {n.rtt} ms</span></div>
+                <Bars data={n.h.map((v) => Math.max(1, v))} n={20} w={8} h={26} />
+              </> : <p className="mute">Terakhir terlihat {fmtAge(n.ageMs)}</p>}
+            </div>
+          ))}</div>
+        ) : (
+          <div className="card pad empty"><b>Belum ada perangkat terhubung.</b><p className="mute">Jalankan agent di PC, server, atau Termux:</p>
+            <pre className="code">{`SENTINEL_URL=${location.origin} \\\nSENTINEL_TOKEN=<HEARTBEAT_TOKEN> \\\nnode agent/sentinel-agent.mjs`}</pre></div>
+        )}
+      </>
+    );
   } else if (route === "/logs") {
     const rows = lf === "ALL" ? logs : logs.filter((l) => l.level === lf);
     page = (
@@ -231,9 +270,18 @@ export default function App() {
             <div><span>ID</span><b className="mono">{p.id}</b></div>
           </>}
         </div>
+        {p.kind === "web" && (
+          <div className="card pad"><div className="cap">Uptime 30 hari</div>
+            <div className="days">{Array.from({ length: 30 }, (_, i) => {
+              const k = new Date(Date.now() + 7 * 3600e3 - (29 - i) * 86400e3).toISOString().slice(0, 10);
+              const e = stats[p.id]?.d?.[k];
+              const r = e?.n ? e.ok / e.n : null;
+              return <i key={k} title={`${k}: ${e?.n ? ((e.ok / e.n) * 100).toFixed(1) + "%" : "tanpa data"}`} className={r === null ? "" : r >= 0.995 ? "g" : r >= 0.95 ? "y" : "r"} />;
+            })}</div></div>
+        )}
         {p.kind === "web" && <div className="card pad"><div className="cap">Tren respons (maks. 30 pemeriksaan terakhir)</div><Bars data={trend(p)} n={30} w={14} h={64} /></div>}
         {p.kind === "desktop" ? (
-          <p className="note">Online jika heartbeat diterima dalam 90 detik terakhir. Kirim POST ke <code>/api/heartbeat</code> secara berkala (contoh ada di Settings).</p>
+          <p className="note">Online jika heartbeat diterima dalam 150 detik terakhir. Kirim POST ke <code>/api/heartbeat</code> secara berkala (contoh ada di Settings).</p>
         ) : (
           <>
             <h3>Riwayat sesi ini ({h.length})</h3>
@@ -286,7 +334,7 @@ export default function App() {
     <div className="shell">
       <aside>
         <div className="wordmark"><span className="mark">A</span>Aeryth <em>Monitor</em></div>
-        <nav>{nav("/", "Overview")}{nav("/monitoring", "Monitoring")}{nav("/logs", "Log", errCount)}{nav("/settings", "Settings")}</nav>
+        <nav>{nav("/", "Overview")}{nav("/monitoring", "Monitoring")}{nav("/devices", "Devices", nodesDown)}{nav("/logs", "Log", errCount)}{nav("/settings", "Settings")}</nav>
         <div className="side-foot">
           <div className="live"><i className={auto ? "on" : ""} />{auto ? "Auto-check aktif" : "Auto-check mati"}</div>
           <div className="who"><span>{user}</span><button onClick={logout}>Keluar</button></div>

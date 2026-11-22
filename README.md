@@ -33,7 +33,7 @@ Buka http://localhost:5173. Cek build: `npm run build`.
 - Tidak ada rate-limit login (tanpa penyimpanan).
 
 ## Heartbeat aplikasi non-web
-Kirim tiap 30–60 detik; online bila heartbeat < 90 detik terakhir.
+Kirim tiap 30–60 detik; online bila heartbeat < 150 detik terakhir.
 ```bash
 curl -X POST https://DOMAIN-ANDA/api/heartbeat \
   -H "Authorization: Bearer $HEARTBEAT_TOKEN" -H "Content-Type: application/json" \
@@ -70,3 +70,12 @@ Bot butuh URL publik, jadi uji di Vercel (bukan localhost). Perhatikan kuota Ups
 | `src/App.tsx`, `src/styles.css` | Seluruh UI dashboard dan tema |
 
 Latihan kecil: (1) tambah produk di `PRODUCTS`; (2) ubah batas "lambat" 3000 ms di `_monitor.js`; (3) ubah `HB_TTL` di `_lib.js`; (4) ganti warna di `:root` pada `styles.css`; (5) tambah perintah bot baru di `CMDS` + `render()` pada `telegram.js`.
+
+## Sentinel Agent (monitoring perangkat: CPU, RAM, disk, uptime)
+Agent tanpa dependency (Node >= 18.15) untuk Windows, Linux, macOS, dan Termux. Mengirim telemetri ke `/api/agent` tiap 60 dtk (token = `HEARTBEAT_TOKEN`).
+```bash
+SENTINEL_URL=https://DOMAIN-ANDA SENTINEL_TOKEN=<HEARTBEAT_TOKEN> node agent/sentinel-agent.mjs
+# opsional: SENTINEL_ID=kei-pc SENTINEL_NAME="KEI-PC" SENTINEL_INTERVAL=60
+```
+Di Termux agar tetap jalan: `nohup node agent/sentinel-agent.mjs > agent.log 2>&1 &` (aktifkan `termux-wake-lock`).
+Alert otomatis: CPU >= 90% selama 5 sampel, RAM >= 90% selama 3 sampel, disk >= 92% selama 2 sampel, perangkat offline > 150 dtk, serta notifikasi saat pulih. Lihat di web (menu Devices, refresh 15 dtk) atau bot (`/devices`, `/node <nama>`). Maksimal 20 perangkat. Estimasi Upstash: ~3 perintah per laporan; interval 60 dtk aman untuk free tier.

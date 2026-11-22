@@ -26,3 +26,4 @@ export async function log(level, source, message, meta = {}) {
   try { await push("logs", JSON.stringify({ t: Date.now(), level, source, message, ...meta }), 500); }
   catch (e) { console.error("log gagal:", e.message); }
 }
+export const mget = async (keys) => (persistent() ? (await cmd(["MGET", ...keys])) || [] : keys.map((k) => mem.get(k) ?? null));

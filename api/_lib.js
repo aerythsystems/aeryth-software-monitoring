@@ -68,7 +68,7 @@ export function auth(req, res) {
   return u;
 }
 
-export const HB_TTL = 90_000; // heartbeat dianggap online jika < 90 detik
+export const HB_TTL = 150_000; // heartbeat/agent dianggap online jika < 150 detik
 export const ip = (req) => String(req.headers["x-forwarded-for"] || "").split(",")[0].trim() || "-";
 export const route = (fn) => async (req, res) => {
   try { await fn(req, res); }
@@ -77,3 +77,12 @@ export const route = (fn) => async (req, res) => {
     if (!res.writableEnded) send(res, 500, { error: "Internal server error" });
   }
 };
+
+// Autentikasi Bearer untuk aplikasi/agent non-web.
+export function requireToken(req, res) {
+  const tok = process.env.HEARTBEAT_TOKEN;
+  if (!tok || tok.length < 16 || !process.env.SESSION_SECRET) { send(res, 503, { error: "HEARTBEAT_TOKEN belum dikonfigurasi" }); return false; }
+  const m = /^Bearer (.+)$/.exec(req.headers.authorization || "");
+  if (!m || !safeEq(m[1], tok)) { send(res, 401, { error: "Unauthorized" }); return false; }
+  return true;
+}
