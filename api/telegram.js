@@ -36,7 +36,7 @@ function summary(rows) {
   for (const r of rows) { const d = dot(r.s, r.ms); d === "🟢" ? c.g++ : d === "🟡" ? c.y++ : d === "🔴" ? c.r++ : c.w++; }
   return c;
 }
-const bannerOf = (L, c, total) => (c.r === 0 ? (c.y ? `🟡 ${L.warn}` : `🟢 ${L.allOk}`) : c.g + c.y === 0 ? `🔴 ${L.major}` : `🟠 ${L.partial}`);
+const bannerOf = (L, c) => (c.g + c.y + c.r === 0 ? `⚪ ${L.waiting}` : c.r === 0 ? (c.y ? `🟡 ${L.warn}` : `🟢 ${L.allOk}`) : c.g + c.y === 0 ? `🔴 ${L.major}` : `🟠 ${L.partial}`);
 
 async function render(action, args, L, c) {
   const webs = PRODUCTS.filter((p) => p.kind === "web");
