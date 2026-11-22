@@ -57,3 +57,16 @@ Alert otomatis: produk DOWN 3x berturut-turut, heartbeat berhenti, dan saat puli
 7. cron-job.org (gratis): URL `https://DOMAIN/api/cron`, interval 5 menit, header `Authorization: Bearer <CRON_SECRET>`.
 
 Bot butuh URL publik, jadi uji di Vercel (bukan localhost). Perhatikan kuota Upstash free tier; interval 5 menit aman.
+
+## Peta kode (untuk memahami & mengubah sendiri)
+| File | Fungsi |
+|---|---|
+| `api/_lib.js` | Daftar produk (`PRODUCTS`), session HMAC, validasi, pembungkus error |
+| `api/_store.js` | Penyimpanan (Upstash/memori) + fungsi `log()` |
+| `api/_monitor.js` | Logika cek website, hitung gagal berturut-turut, insiden, heartbeat |
+| `api/_telegram.js`, `api/_i18n.js` | Pengiriman alert & semua teks dua bahasa |
+| `api/telegram.js` | Menu/tombol bot Telegram |
+| `api/cron.js` | Endpoint yang dipicu cron-job.org (statistik uptime) |
+| `src/App.tsx`, `src/styles.css` | Seluruh UI dashboard dan tema |
+
+Latihan kecil: (1) tambah produk di `PRODUCTS`; (2) ubah batas "lambat" 3000 ms di `_monitor.js`; (3) ubah `HB_TTL` di `_lib.js`; (4) ganti warna di `:root` pada `styles.css`; (5) tambah perintah bot baru di `CMDS` + `render()` pada `telegram.js`.
