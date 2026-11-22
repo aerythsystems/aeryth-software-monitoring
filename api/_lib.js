@@ -2,12 +2,12 @@ import { createHmac, timingSafeEqual } from "node:crypto";
 import { log } from "./_store.js";
 
 export const PRODUCTS = [
-  { id: "nmc-academy", name: "NMC Academy", kind: "web", url: "https://nmcacademy.vercel.app/" },
-  { id: "trebee", name: "Trebee", kind: "web", url: "https://trebee.vercel.app/" },
-  { id: "aeryth-prompt", name: "Aeryth Prompt", kind: "web", url: "https://aerythprompt.vercel.app/" },
-  { id: "aeryth-systems", name: "Aeryth Systems", kind: "web", url: "https://aerythsystems.vercel.app/" },
-  { id: "absensi", name: "Absensi Aeryth Systems", kind: "web", url: "https://absensiaerythsystems.vercel.app/" },
-  { id: "prospector-ai", name: "Aeryth Prospector AI", kind: "desktop" },
+  { id: "nmc-academy", short: "NMC Academy", name: "NMC Academy", kind: "web", url: "https://nmcacademy.vercel.app/" },
+  { id: "trebee", short: "Trebee", name: "Trebee", kind: "web", url: "https://trebee.vercel.app/" },
+  { id: "aeryth-prompt", short: "Aeryth Prompt", name: "Aeryth Prompt", kind: "web", url: "https://aerythprompt.vercel.app/" },
+  { id: "aeryth-systems", short: "Aeryth Sys", name: "Aeryth Systems", kind: "web", url: "https://aerythsystems.vercel.app/" },
+  { id: "absensi", short: "Absensi", name: "Absensi Aeryth Systems", kind: "web", url: "https://absensiaerythsystems.vercel.app/" },
+  { id: "prospector-ai", short: "Prospector", name: "Aeryth Prospector AI", kind: "desktop" },
 ];
 
 const TTL = 8 * 3600;

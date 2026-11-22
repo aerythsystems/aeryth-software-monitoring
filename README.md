@@ -53,7 +53,7 @@ Alert otomatis: produk DOWN 3x berturut-turut, heartbeat berhenti, dan saat puli
 3. Buat `TELEGRAM_WEBHOOK_SECRET` dan `CRON_SECRET` (huruf/angka/_/-): `node -e "console.log(require('crypto').randomBytes(24).toString('base64url'))"`.
 4. Isi semua variabel di Vercel, lalu deploy.
 5. Daftarkan webhook: `curl "https://api.telegram.org/bot<TOKEN>/setWebhook?url=https://DOMAIN/api/telegram&secret_token=<TELEGRAM_WEBHOOK_SECRET>"`
-6. (Opsional) BotFather → `/setcommands`: `menu - Menu utama`, `status - Status semua produk`, `check - Cek satu produk`, `logs - Log terbaru`, `lang - Bahasa / Language`, `help - Bantuan`.
+6. (Opsional) BotFather → `/setcommands`: `menu - Menu utama`, `status - Status produk`, `check - Cek satu produk`, `uptime - Persentase uptime`, `incidents - Riwayat insiden`, `desktop - Aplikasi desktop`, `links - Tautan produk`, `logs - Log terbaru`, `notif - Atur alert`, `system - Diagnostik`, `lang - Bahasa / Language`, `help - Bantuan`.
 7. cron-job.org (gratis): URL `https://DOMAIN/api/cron`, interval 5 menit, header `Authorization: Bearer <CRON_SECRET>`.
 
 Bot butuh URL publik, jadi uji di Vercel (bukan localhost). Perhatikan kuota Upstash free tier; interval 5 menit aman.
